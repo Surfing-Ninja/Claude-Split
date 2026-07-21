@@ -1,5 +1,11 @@
 import { defineConfig } from 'drizzle-kit';
 
+try {
+  process.loadEnvFile(); // ./.env when run from server/
+} catch {
+  // no .env — rely on real environment variables
+}
+
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/db/schema.ts',

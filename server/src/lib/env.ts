@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 export type Env = {
   databaseUrl: string;
   port: number;
@@ -7,6 +9,15 @@ export type Env = {
 };
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
+  if (source === process.env) {
+    try {
+      // server/.env — resolved relative to this file so it works from both
+      // src (tsx) and dist (node), regardless of cwd
+      process.loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
+    } catch {
+      // no .env file — fall back to real environment variables
+    }
+  }
   const databaseUrl = source.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required (see .env.example)');
