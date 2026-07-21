@@ -1,0 +1,37 @@
+{
+  "name": "claude-split-agent",
+  "version": "0.1.0",
+  "description": "Claude Split CLI companion — attributes Claude Code usage on this machine to your own dashboard",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "claude-split-agent": "dist/cli.js"
+  },
+  "main": "dist/agent.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "usage",
+    "tracker"
+  ]
+}
