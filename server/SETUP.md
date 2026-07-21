@@ -53,17 +53,15 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 The returned `token` is what the extension and CLI agent use as
 `Authorization: Bearer <token>`.
 
-## 5. CORS for the extension
+## 5. CORS
 
-After installing the extension, copy its ID (from `chrome://extensions` with
-Developer mode on, or `about:debugging` in Firefox) into `.env`:
+Nothing to do for extensions: browser-extension origins
+(`chrome-extension://…`, `moz-extension://…`) are always accepted, so any
+install on any device works out of the box — access is controlled by
+accounts and bearer tokens, not by extension IDs.
 
-```
-CORS_ORIGINS=chrome-extension://abcdefghijklmnop,moz-extension://<uuid>
-```
-
-Restart the server afterwards. Requests from the extension's background
-worker and popup carry that origin.
+`CORS_ORIGINS` is only needed if you later add a web-based dashboard on its
+own domain (comma-separated origins, or `*`).
 
 ## 6. Production: HTTPS
 
@@ -84,7 +82,7 @@ The server sets `trust proxy`, so client IPs for rate limiting come from
 | ---------------- | ------------ | -------------------------------------------------------- |
 | `DATABASE_URL`   | — (required) | Postgres connection string                               |
 | `PORT`           | `8080`       | Listen port                                              |
-| `CORS_ORIGINS`   | empty        | Comma-separated allowed origins                          |
+| `CORS_ORIGINS`   | empty        | Extra allowed web origins (extensions always allowed)    |
 | `TOKEN_TTL_DAYS` | `30`         | Sliding token lifetime                                   |
 | `RETENTION_DAYS` | `90`         | Default event retention (per-user override via settings) |
 

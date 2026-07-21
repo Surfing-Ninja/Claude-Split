@@ -20,10 +20,19 @@ export type AppOptions = {
   trustProxy?: boolean;
 };
 
+// Browser-extension origins are always allowed: every unpacked install gets a
+// unique extension ID, and requiring server reconfiguration per install would
+// make onboarding impossible. This is safe because the API carries no ambient
+// credentials (no cookies) — every request must present a bearer token, so
+// CORS here only governs who can *read* responses they already authorized.
+// CORS_ORIGINS remains for optional extra web origins (or '*' to allow all).
+const EXTENSION_ORIGIN_RE = /^(chrome-extension|moz-extension|safari-web-extension):\/\//;
+
 function corsAllowlist(allowed: string[]) {
+  const allowAll = allowed.includes('*');
   return (req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
-    if (origin && allowed.includes(origin)) {
+    if (origin && (allowAll || EXTENSION_ORIGIN_RE.test(origin) || allowed.includes(origin))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');

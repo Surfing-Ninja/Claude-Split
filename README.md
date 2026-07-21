@@ -75,10 +75,9 @@ Full walkthrough incl. Neon signup and HTTPS: [server/SETUP.md](server/SETUP.md)
    select the `extension/` folder.
    Firefox: `about:debugging` → This Firefox → **Load Temporary Add-on** →
    select `extension/manifest.json`.
-2. Add the extension's origin to `CORS_ORIGINS` in `server/.env` (see SETUP.md).
-3. Open the popup → Settings → enter your backend URL → **Create account**
+2. Open the popup → Settings → enter your backend URL → **Create account**
    (first device) or **Log in** (the rest). Give each device a name.
-4. Open claude.ai once. Bars appear; background polling keeps them fresh.
+3. Open claude.ai once. Bars appear; background polling keeps them fresh.
 
 ### 3. CLI agent (machines running Claude Code)
 
