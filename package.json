@@ -1,0 +1,37 @@
+{
+  "name": "claude-split",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Personal multi-device usage tracker for Claude Pro/Max",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "extension",
+    "server",
+    "agent"
+  ],
+  "scripts": {
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true,
+    "argon2@0.44.0": true
+  }
+}
