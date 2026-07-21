@@ -1,6 +1,6 @@
 # claude-split-agent
 
-CLI companion for [Claude Split](https://github.com/your-org/claude-split):
+CLI companion for [Claude Split](https://github.com/Surfing-Ninja/Claude-Split):
 attributes **Claude Code** usage on this machine to its own device row on
 your Claude Split dashboard. Optional — without it, Claude Code usage still
 shows up in your combined totals, just as "Unattributed".
@@ -63,5 +63,5 @@ Repeat the walkthrough to refresh.
 - The backend receives only: usage percentages, deltas, timestamps, and this
   device's name.
 
-Part of the MIT-licensed [Claude Split](https://github.com/your-org/claude-split)
+Part of the MIT-licensed [Claude Split](https://github.com/Surfing-Ninja/Claude-Split)
 project. Not affiliated with Anthropic.

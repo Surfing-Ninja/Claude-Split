@@ -61,7 +61,7 @@ honestly as an **Unattributed** row rather than being guessed at.
 ### 1. Backend (5 minutes, free)
 
 ```bash
-git clone https://github.com/your-org/claude-split && cd claude-split
+git clone https://github.com/Surfing-Ninja/Claude-Split && cd claude-split
 npm install
 cd server && cp .env.example .env   # paste a Neon (or any Postgres) URL
 npm run migrate && npm run build && npm start

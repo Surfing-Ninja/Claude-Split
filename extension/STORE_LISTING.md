@@ -36,7 +36,7 @@ own devices only.
 percentages, timestamps, device names, and reset times.
 — Your Claude login cookie never leaves your browser.
 
-Open source (MIT): https://github.com/your-org/claude-split
+Open source (MIT): https://github.com/Surfing-Ninja/Claude-Split
 Usage-interception technique credit: claude-counter (she-llac, MIT).
 Independent project; not affiliated with or endorsed by Anthropic.
 

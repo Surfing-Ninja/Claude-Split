@@ -10,7 +10,7 @@ Usage:
   claude-split-agent --help   show this help
 
 Config: ${CONFIG_PATH} (chmod 600 — your Claude cookie never leaves this machine)
-Docs:   https://github.com/your-org/claude-split (agent section)
+Docs:   https://github.com/Surfing-Ninja/Claude-Split (agent section)
 `;
 
 const command = process.argv[2];
