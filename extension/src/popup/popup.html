@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Claude Split</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Claude Split</h1>
+      <div class="header-right">
+        <span id="data-age" title="Age of the latest official numbers">—</span>
+        <button id="refresh" title="Refresh now">↻</button>
+      </div>
+    </header>
+
+    <div id="alerts"></div>
+
+    <section id="bars" aria-label="Combined usage (official numbers)"></section>
+
+    <section aria-labelledby="devices-heading">
+      <h2 id="devices-heading">Devices</h2>
+      <div id="devices"></div>
+      <p id="devices-note" class="muted hidden">
+        Per-device numbers are best-effort estimates; Claude's own totals above are the truth.
+      </p>
+    </section>
+
+    <details id="settings">
+      <summary>Settings</summary>
+
+      <div class="field">
+        <label for="device-name">This device's name</label>
+        <div class="row">
+          <input id="device-name" type="text" maxlength="80" />
+          <button id="save-device-name">Save</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">Warn / block thresholds</span>
+        <label class="slider-label"
+          >Session warn <span id="warn-session-val"></span>
+          <input type="range" id="warn-session" min="50" max="100" step="1" />
+        </label>
+        <label class="slider-label"
+          >Session block <span id="block-session-val"></span>
+          <input type="range" id="block-session" min="50" max="100" step="1" />
+        </label>
+        <label class="slider-label"
+          >Weekly warn <span id="warn-weekly-val"></span>
+          <input type="range" id="warn-weekly" min="50" max="100" step="1" />
+        </label>
+        <label class="slider-label"
+          >Weekly block <span id="block-weekly-val"></span>
+          <input type="range" id="block-weekly" min="50" max="100" step="1" />
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="hard-block" />
+          Hard-block sending at the block threshold (always overridable on the page)
+        </label>
+      </div>
+
+      <div class="field" id="account-signed-out">
+        <span class="label">Sync account</span>
+        <input id="backend-url" type="url" placeholder="Backend URL (https://…)" />
+        <input id="email" type="email" placeholder="Email" autocomplete="username" />
+        <input
+          id="password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <div class="row">
+          <button id="login">Log in</button>
+          <button id="register" class="secondary">Create account</button>
+        </div>
+        <p class="muted">One account, one owner: sync is for <em>your own</em> devices only.</p>
+      </div>
+
+      <div class="field hidden" id="account-signed-in">
+        <span class="label">Sync account</span>
+        <p id="account-info"></p>
+        <div class="row">
+          <button id="logout" class="secondary">Log out</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <button id="reset-local" class="danger">Reset local data</button>
+      </div>
+
+      <p id="settings-error" class="error hidden"></p>
+    </details>
+
+    <footer class="muted">
+      Estimates only — Claude's official numbers are always the source of truth.
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
