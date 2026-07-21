@@ -16,6 +16,9 @@ Claude Split does:
 - **Warn + soft-block** — a banner at 90%, and (optionally) a hold on the
   send button at 98% with an always-visible one-click **Send anyway**
   override. You are never locked out by your own tool.
+- **Owner device** — the first device registered on an account controls the
+  thresholds, counter resets, and account deletion; other devices see
+  settings read-only (enforced server-side).
 
 ## What Claude Split is _not_
 

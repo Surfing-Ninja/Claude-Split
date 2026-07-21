@@ -32,6 +32,9 @@ export const sessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull().unique(),
+    // Bound to the device this token first registered — the basis for
+    // owner-device permission checks.
+    deviceId: uuid('device_id').references(() => devices.id, { onDelete: 'set null' }),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
@@ -49,12 +52,16 @@ export const devices = pgTable(
     deviceUuid: text('device_uuid').notNull(),
     name: text('name').notNull(),
     kind: text('kind').notNull(),
+    // First device registered on an account becomes 'owner': only it may
+    // change settings, reset counters, or delete the account.
+    role: text('role').notNull().default('member'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
   },
   (t) => [
     uniqueIndex('devices_user_device_uuid_uq').on(t.userId, t.deviceUuid),
     check('devices_kind_check', sql`${t.kind} in ('browser', 'claude-code')`),
+    check('devices_role_check', sql`${t.role} in ('owner', 'member')`),
   ],
 );
 

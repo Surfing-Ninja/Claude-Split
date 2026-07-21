@@ -305,7 +305,9 @@ async function housekeeping() {
 
 async function ensureDeviceRegistered(auth) {
   const state = await storeGet([KEYS.deviceId, KEYS.deviceName, KEYS.deviceRegistered]);
-  const fingerprint = `${auth.backendUrl}|${auth.token.slice(0, 8)}|${state[KEYS.deviceId]}`;
+  // v2: re-register once so existing tokens get bound to their device
+  // server-side (basis for the owner-device permission checks).
+  const fingerprint = `v2|${auth.backendUrl}|${auth.token.slice(0, 8)}|${state[KEYS.deviceId]}`;
   if (state[KEYS.deviceRegistered] === fingerprint) return true;
   const result = await backend.registerDevice(auth, {
     deviceUuid: state[KEYS.deviceId],
@@ -375,8 +377,12 @@ async function refreshSummary(auth) {
 
 async function getPopupState() {
   const state = await storeGet(Object.values(KEYS));
+  const summaryDevices = state[KEYS.summary]?.data?.devices ?? [];
+  const ownDevice = summaryDevices.find((d) => d.deviceUuid === state[KEYS.deviceId]);
   return {
     ok: true,
+    // null = unknown (not synced yet); false = member device, settings read-only
+    isOwnerDevice: ownDevice ? ownDevice.role === 'owner' : null,
     deviceId: state[KEYS.deviceId],
     deviceName: state[KEYS.deviceName],
     snapshot: state[KEYS.latestSnapshot] ?? null,
@@ -456,11 +462,24 @@ async function renameDevice(name) {
 
 async function setSettings(patch) {
   const state = await storeGet([KEYS.settings, KEYS.auth]);
-  const merged = { ...DEFAULT_SETTINGS, ...(state[KEYS.settings] ?? {}), ...(patch ?? {}) };
-  await storeSet({ [KEYS.settings]: merged });
-  if (state[KEYS.auth]?.token) {
-    await backend.patchSettings(state[KEYS.auth], patch ?? {});
+  const auth = state[KEYS.auth];
+  let merged = { ...DEFAULT_SETTINGS, ...(state[KEYS.settings] ?? {}), ...(patch ?? {}) };
+  if (auth?.token) {
+    // Backend first: the owner-device rule is enforced there, and a member
+    // device's local settings must not drift from the account's.
+    const result = await backend.patchSettings(auth, patch ?? {});
+    if (!result.ok) {
+      const error =
+        result.status === 403
+          ? 'Only the owner device (the first one registered) can change these settings.'
+          : (result.error ?? `settings update failed (${result.status})`);
+      return { ok: false, error };
+    }
+    const thresholds = { ...result.json };
+    delete thresholds.retentionDays;
+    merged = { ...DEFAULT_SETTINGS, ...thresholds };
   }
+  await storeSet({ [KEYS.settings]: merged });
   return getPopupState();
 }
 

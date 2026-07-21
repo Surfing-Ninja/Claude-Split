@@ -2,6 +2,7 @@ import { and, asc, eq, gte, sql } from 'drizzle-orm';
 import { Router } from 'express';
 import type { Db } from '../db/client.js';
 import { devices, usageEvents, type WeeklyEntry } from '../db/schema.js';
+import { isOwnerRequest, OWNER_ONLY_ERROR } from '../lib/permissions.js';
 import { usageLogSchema, usageResetSchema } from '../lib/validation.js';
 import type { AuthedRequest } from '../middleware/auth.js';
 
@@ -111,6 +112,7 @@ export function makeUsageRouter(db: Db) {
             deviceUuid: devices.deviceUuid,
             name: devices.name,
             kind: devices.kind,
+            role: devices.role,
             lastSeenAt: devices.lastSeenAt,
           })
           .from(devices)
@@ -202,10 +204,16 @@ export function makeUsageRouter(db: Db) {
   });
 
   // Manual counter reset (testing + recovery): drops attribution events only.
+  // Destructive, so owner-device only.
   router.post('/usage/reset', async (req, res, next) => {
     try {
-      const { user } = req as AuthedRequest;
+      const authed = req as AuthedRequest;
+      const { user } = authed;
       const body = usageResetSchema.parse(req.body);
+      if (!(await isOwnerRequest(db, user.id, authed.sessionDeviceId))) {
+        res.status(403).json({ error: OWNER_ONLY_ERROR });
+        return;
+      }
       if (body.scope === 'all') {
         await db.delete(usageEvents).where(eq(usageEvents.userId, user.id));
       } else if (body.scope === 'weekly') {

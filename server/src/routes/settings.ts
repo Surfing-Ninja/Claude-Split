@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { Router } from 'express';
 import type { Db } from '../db/client.js';
 import { userSettings } from '../db/schema.js';
+import { isOwnerRequest, OWNER_ONLY_ERROR } from '../lib/permissions.js';
 import { settingsPatchSchema } from '../lib/validation.js';
 import type { AuthedRequest } from '../middleware/auth.js';
 
@@ -42,10 +43,17 @@ export function makeSettingsRouter(db: Db) {
     }
   });
 
+  // Owner-device rule: thresholds and retention are set once by the account's
+  // first device; other devices read but cannot edit them.
   router.patch('/settings', async (req, res, next) => {
     try {
-      const { user } = req as AuthedRequest;
+      const authed = req as AuthedRequest;
+      const { user } = authed;
       const body = settingsPatchSchema.parse(req.body);
+      if (!(await isOwnerRequest(db, user.id, authed.sessionDeviceId))) {
+        res.status(403).json({ error: OWNER_ONLY_ERROR });
+        return;
+      }
       const set: Partial<typeof userSettings.$inferInsert> = {};
       if (body.warnSession != null) set.warnSession = String(body.warnSession);
       if (body.blockSession != null) set.blockSession = String(body.blockSession);

@@ -199,6 +199,13 @@ function renderSettings() {
   }
   $('hard-block').checked = Boolean(s.hardBlockEnabled);
 
+  // Owner-device rule: member devices see thresholds read-only.
+  const readOnly = state.isOwnerDevice === false;
+  for (const id of ['warn-session', 'block-session', 'warn-weekly', 'block-weekly', 'hard-block']) {
+    $(id).disabled = readOnly;
+  }
+  $('owner-note').classList.toggle('hidden', !readOnly);
+
   const signedIn = Boolean(state.auth);
   $('account-signed-out').classList.toggle('hidden', signedIn);
   $('account-signed-in').classList.toggle('hidden', !signedIn);

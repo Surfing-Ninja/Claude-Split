@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { Router } from 'express';
 import type { Db } from '../db/client.js';
 import { sessions, users, userSettings } from '../db/schema.js';
+import { isOwnerRequest, OWNER_ONLY_ERROR } from '../lib/permissions.js';
 import { generateToken, hashToken } from '../lib/tokens.js';
 import { loginSchema, registerSchema } from '../lib/validation.js';
 import type { AuthedRequest } from '../middleware/auth.js';
@@ -137,9 +138,16 @@ export function makeAuthRouter(
   });
 
   // GDPR-style wipe: users row cascades to sessions, devices, events, settings.
+  // Owner-device only once devices exist — a member device must not be able
+  // to wipe the whole account.
   router.delete('/me', requireAuth, async (req, res, next) => {
     try {
-      const { user } = req as AuthedRequest;
+      const authed = req as AuthedRequest;
+      const { user } = authed;
+      if (!(await isOwnerRequest(db, user.id, authed.sessionDeviceId))) {
+        res.status(403).json({ error: OWNER_ONLY_ERROR });
+        return;
+      }
       await db.delete(users).where(eq(users.id, user.id));
       res.json({ ok: true, deleted: true });
     } catch (err) {

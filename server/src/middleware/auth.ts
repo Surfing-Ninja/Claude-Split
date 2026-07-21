@@ -8,6 +8,8 @@ export type AuthedRequest = Request & {
   user: { id: string; email: string };
   sessionId: string;
   tokenHash: string;
+  /** device this token registered from, if any — basis for owner checks */
+  sessionDeviceId: string | null;
 };
 
 const SLIDING_UPDATE_THROTTLE_MS = 5 * 60 * 1000;
@@ -55,6 +57,7 @@ export function makeAuthMiddleware(db: Db, tokenTtlDays: number) {
       authed.user = { id: row.user.id, email: row.user.email };
       authed.sessionId = row.session.id;
       authed.tokenHash = tokenHash;
+      authed.sessionDeviceId = row.session.deviceId ?? null;
       next();
     } catch (err) {
       next(err);
