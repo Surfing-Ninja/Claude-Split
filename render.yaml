@@ -1,0 +1,21 @@
+# Render.com blueprint — deploys the Claude Split backend as a free web service.
+# Dashboard → New + → Blueprint → select this repo. Render will prompt for the
+# two secrets (DATABASE_URL, CORS_ORIGINS) on first deploy.
+services:
+  - type: web
+    name: claude-split
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false # your Neon connection string — entered in the dashboard, never committed
+      - key: CORS_ORIGINS
+        sync: false # comma-separated extension origins, e.g. chrome-extension://<id>
+      - key: TOKEN_TTL_DAYS
+        value: "30"
+      - key: RETENTION_DAYS
+        value: "90"
