@@ -403,6 +403,8 @@ async function refresh() {
   await pollUsage('manual');
   const state = await storeGet([KEYS.auth]);
   if (state[KEYS.auth]?.token) {
+    // keeps the session→device binding fresh even before any send happens
+    await ensureDeviceRegistered(state[KEYS.auth]);
     await flushQueue();
     await refreshSummary(state[KEYS.auth]);
   }
