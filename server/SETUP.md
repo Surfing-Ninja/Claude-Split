@@ -80,13 +80,13 @@ The server sets `trust proxy`, so client IPs for rate limiting come from
 
 ## Environment reference
 
-| Var | Default | Meaning |
-|---|---|---|
-| `DATABASE_URL` | — (required) | Postgres connection string |
-| `PORT` | `8080` | Listen port |
-| `CORS_ORIGINS` | empty | Comma-separated allowed origins |
-| `TOKEN_TTL_DAYS` | `30` | Sliding token lifetime |
-| `RETENTION_DAYS` | `90` | Default event retention (per-user override via settings) |
+| Var              | Default      | Meaning                                                  |
+| ---------------- | ------------ | -------------------------------------------------------- |
+| `DATABASE_URL`   | — (required) | Postgres connection string                               |
+| `PORT`           | `8080`       | Listen port                                              |
+| `CORS_ORIGINS`   | empty        | Comma-separated allowed origins                          |
+| `TOKEN_TTL_DAYS` | `30`         | Sliding token lifetime                                   |
+| `RETENTION_DAYS` | `90`         | Default event retention (per-user override via settings) |
 
 ## Operational notes
 

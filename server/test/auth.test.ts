@@ -83,9 +83,7 @@ describe('auth lifecycle', () => {
 
   it('DELETE /me wipes the account', async () => {
     const { token, email, password } = await registerUser(ctx.app, 'gone@example.com');
-    const del = await request(ctx.app)
-      .delete('/api/v1/me')
-      .set('Authorization', `Bearer ${token}`);
+    const del = await request(ctx.app).delete('/api/v1/me').set('Authorization', `Bearer ${token}`);
     expect(del.status).toBe(200);
 
     const login = await request(ctx.app).post('/api/v1/auth/login').send({ email, password });

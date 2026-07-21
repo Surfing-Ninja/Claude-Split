@@ -51,7 +51,11 @@ async function createSession(db: Db, userId: string, ttlDays: number) {
   return { token, expiresAt: expiresAt.toISOString() };
 }
 
-export function makeAuthRouter(db: Db, ttlDays: number, requireAuth: import('express').RequestHandler) {
+export function makeAuthRouter(
+  db: Db,
+  ttlDays: number,
+  requireAuth: import('express').RequestHandler,
+) {
   const router = Router();
   const backoff = new LoginBackoff();
 

@@ -60,7 +60,12 @@ export function makeUsageRouter(db: Db) {
       // Snapshot-only buckets (no delta this send) still update "latest known".
       for (const snap of body.weeklySnapshots) {
         if (!weekly.some((w) => w.limitType === snap.limitType)) {
-          weekly.push({ limitType: snap.limitType, delta: 0, pct: snap.pct, resetAt: snap.resetAt });
+          weekly.push({
+            limitType: snap.limitType,
+            delta: 0,
+            pct: snap.pct,
+            resetAt: snap.resetAt,
+          });
         }
       }
 
@@ -77,9 +82,7 @@ export function makeUsageRouter(db: Db) {
           idempotencyKey,
         })
         .onConflictDoNothing(
-          idempotencyKey
-            ? { target: [usageEvents.userId, usageEvents.idempotencyKey] }
-            : undefined,
+          idempotencyKey ? { target: [usageEvents.userId, usageEvents.idempotencyKey] } : undefined,
         )
         .returning({ id: usageEvents.id });
 
@@ -170,8 +173,7 @@ export function makeUsageRouter(db: Db) {
         latest: latest
           ? {
               capturedAt: latest.occurredAt.toISOString(),
-              sessionPct:
-                latest.sessionPctAfter != null ? Number(latest.sessionPctAfter) : null,
+              sessionPct: latest.sessionPctAfter != null ? Number(latest.sessionPctAfter) : null,
               sessionResetAt: latest.sessionResetAt?.toISOString() ?? null,
               weekly: latestWeekly.map((w) => ({
                 limitType: w.limitType,
