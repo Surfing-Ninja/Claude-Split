@@ -214,12 +214,24 @@ function renderSettings() {
   }
 }
 
+function renderDebugLine() {
+  const parts = [];
+  if (state.lastSendAt) {
+    const s = Math.max(0, Math.round((Date.now() - new Date(state.lastSendAt).getTime()) / 1000));
+    const age = s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : `${Math.round(s / 3600)}h`;
+    parts.push(`last send seen ${age} ago${state.pendingSend ? ' · attributing…' : ''}`);
+  }
+  if (state.queueLength > 0) parts.push(`${state.queueLength} queued`);
+  $('debug-line').textContent = parts.join(' · ');
+}
+
 function render() {
   if (!state) return;
   renderAlerts();
   renderBars();
   renderDevices();
   renderSettings();
+  renderDebugLine();
 }
 
 function showError(message) {

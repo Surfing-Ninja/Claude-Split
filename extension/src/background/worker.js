@@ -18,7 +18,12 @@ const POLL_ALARM = 'usage-poll';
 const HOUSEKEEPING_ALARM = 'housekeeping';
 const POLL_PERIOD_MIN = 3;
 const SNAPSHOT_FRESH_MS = 60 * 1000; // §8: before-snapshot must be < 60s old
-const PENDING_SEND_TIMEOUT_MS = 30 * 1000;
+// Send settlement: /usage reports whole percents and can lag a send by
+// minutes, so a pending send stays open up to SETTLE_MAX_WINDOW_MS and is
+// re-checked (with a forced poll) on this cadence until the numbers move.
+const SETTLE_FIRST_CHECK_MS = 30 * 1000;
+const SETTLE_RECHECK_MS = 45 * 1000;
+const SETTLE_MAX_WINDOW_MS = 5 * 60 * 1000;
 const MAX_POLL_FAILURES = 3;
 const QUEUE_BACKOFF_START_MS = 30 * 1000;
 const QUEUE_BACKOFF_MAX_MS = 15 * 60 * 1000;
@@ -144,20 +149,22 @@ async function handleSendDetected(payload) {
     before = (await pollUsage('pre-send')) ?? latest ?? null;
   }
 
+  const now = Date.now();
   const existing = state[KEYS.pendingSend];
   const pendingSend = existing
     ? // rapid successive sends coalesce: keep the earliest baseline so the
       // combined jump is attributed to this device once
-      { ...existing, deadline: Date.now() + PENDING_SEND_TIMEOUT_MS }
+      { ...existing, expiresAt: now + SETTLE_MAX_WINDOW_MS }
     : {
         before,
         startedAt: at,
-        deadline: Date.now() + PENDING_SEND_TIMEOUT_MS,
+        nextCheckAt: now + SETTLE_FIRST_CHECK_MS,
+        expiresAt: now + SETTLE_MAX_WINDOW_MS,
       };
-  await storeSet({ [KEYS.pendingSend]: pendingSend });
+  await storeSet({ [KEYS.pendingSend]: pendingSend, [KEYS.lastSendAt]: at });
 
   // Best-effort prompt resolution; housekeeping alarm is the durable fallback.
-  setTimeout(() => void housekeeping(), PENDING_SEND_TIMEOUT_MS + 5000);
+  setTimeout(() => void housekeeping(), SETTLE_FIRST_CHECK_MS + 2000);
 }
 
 /**
@@ -165,13 +172,11 @@ async function handleSendDetected(payload) {
  * Returns a storage patch, or null to keep waiting.
  */
 function resolvePendingSend(pending, snapshot, counters) {
-  const before = pending.before;
-  const timedOut = Date.now() > pending.deadline;
-  const change = computeDelta(before, snapshot);
+  const change = computeDelta(pending.before, snapshot);
 
   if (change.kind === 'unusable') {
-    // no usable baseline — drop the pending send, keep official numbers
-    return timedOut ? { [KEYS.pendingSend]: null } : null;
+    // no usable baseline — nothing will ever settle; drop it
+    return { [KEYS.pendingSend]: null };
   }
   if (change.kind === 'reset') {
     return {
@@ -180,12 +185,13 @@ function resolvePendingSend(pending, snapshot, counters) {
     };
   }
   const moved = change.sessionDelta > 0 || change.weeklyDeltas.length > 0;
-  if (!moved && !timedOut) return null; // SSE snapshot for this send not seen yet
+  // Not moved yet: keep waiting — housekeeping re-polls until expiresAt.
+  if (!moved) return null;
 
-  const patch = { [KEYS.pendingSend]: null };
-  if (moved) {
-    patch[KEYS.localCounters] = applyToLocalCounters(counters, change, snapshot);
-    patch.__enqueue = {
+  return {
+    [KEYS.pendingSend]: null,
+    [KEYS.localCounters]: applyToLocalCounters(counters, change, snapshot),
+    __enqueue: {
       occurredAt: pending.startedAt,
       sessionDelta: change.sessionDelta,
       weeklyDeltas: change.weeklyDeltas,
@@ -196,9 +202,8 @@ function resolvePendingSend(pending, snapshot, counters) {
         pct: w.pct,
         resetAt: w.resetAt,
       })),
-    };
-  }
-  return patch;
+    },
+  };
 }
 
 // resolvePendingSend returns a plain storage patch plus an optional
@@ -280,22 +285,27 @@ async function resolveOrgId(cached) {
 async function housekeeping() {
   const state = await storeGet([KEYS.pendingSend, KEYS.latestSnapshot, KEYS.localCounters]);
   const pending = state[KEYS.pendingSend];
-  if (pending && Date.now() > pending.deadline) {
-    // §8: timeout 30s → fall back to one forced poll, then settle either way.
-    const polled = await pollUsage('pending-timeout');
-    const latest = polled ?? state[KEYS.latestSnapshot];
-    if (latest) {
-      const stillPending = (await storeGet([KEYS.pendingSend]))[KEYS.pendingSend];
-      if (stillPending) {
-        const resolved = resolvePendingSend(
-          { ...stillPending, deadline: 0 },
-          latest,
-          state[KEYS.localCounters],
-        );
-        if (resolved) await storeSetWithQueue(resolved);
-      }
-    } else {
+  const now = Date.now();
+  if (pending) {
+    if (now > pending.expiresAt) {
+      // settle window exhausted with no measurable movement — give up
       await storeSet({ [KEYS.pendingSend]: null });
+    } else if (now > (pending.nextCheckAt ?? 0)) {
+      const polled = await pollUsage('pending-check');
+      const latest = polled ?? state[KEYS.latestSnapshot];
+      const stillPending = (await storeGet([KEYS.pendingSend]))[KEYS.pendingSend];
+      if (stillPending && latest) {
+        const resolved = resolvePendingSend(stillPending, latest, state[KEYS.localCounters]);
+        if (resolved) {
+          await storeSetWithQueue(resolved);
+        } else {
+          // numbers haven't moved yet — keep the pending send, check again soon
+          await storeSet({
+            [KEYS.pendingSend]: { ...stillPending, nextCheckAt: now + SETTLE_RECHECK_MS },
+          });
+          setTimeout(() => void housekeeping(), SETTLE_RECHECK_MS + 2000);
+        }
+      }
     }
   }
   await flushQueue();
@@ -396,6 +406,8 @@ async function getPopupState() {
     queueLength: (state[KEYS.eventQueue] ?? []).length,
     claudeLoggedOut: Boolean(state[KEYS.claudeLoggedOut]),
     parserBroken: Boolean(state[KEYS.parserBroken]),
+    lastSendAt: state[KEYS.lastSendAt] ?? null,
+    pendingSend: Boolean(state[KEYS.pendingSend]),
   };
 }
 
@@ -451,12 +463,19 @@ async function renameDevice(name) {
   const trimmed = String(name ?? '').trim();
   if (!trimmed) return { ok: false, error: 'name required' };
   await storeSet({ [KEYS.deviceName]: trimmed });
-  const state = await storeGet([KEYS.auth, KEYS.summary, KEYS.deviceId]);
+  const state = await storeGet([KEYS.auth, KEYS.deviceId]);
   const auth = state[KEYS.auth];
-  const summaryDevices = state[KEYS.summary]?.data?.devices ?? [];
-  const own = summaryDevices.find((d) => d.deviceUuid === state[KEYS.deviceId]);
-  if (auth?.token && own) {
-    await backend.renameDevice(auth, own.id, trimmed);
+  if (auth?.token) {
+    // Look the device up fresh — the cached summary may predate registration.
+    await ensureDeviceRegistered(auth);
+    const devices = await backend.listDevices(auth);
+    const own = (devices.json ?? []).find?.((d) => d.deviceUuid === state[KEYS.deviceId]);
+    if (own) {
+      const renamed = await backend.renameDevice(auth, own.id, trimmed);
+      if (!renamed.ok) {
+        return { ok: false, error: renamed.error ?? `rename failed (${renamed.status})` };
+      }
+    }
     await refreshSummary(auth);
   }
   return getPopupState();

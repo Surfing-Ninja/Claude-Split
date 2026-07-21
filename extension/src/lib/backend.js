@@ -33,6 +33,7 @@ export const backend = {
   logout: (auth) => call(auth.backendUrl, '/auth/logout', { method: 'POST', token: auth.token }),
   registerDevice: (auth, device) =>
     call(auth.backendUrl, '/devices/register', { method: 'POST', token: auth.token, body: device }),
+  listDevices: (auth) => call(auth.backendUrl, '/devices', { token: auth.token }),
   renameDevice: (auth, deviceId, name) =>
     call(auth.backendUrl, `/devices/${deviceId}`, {
       method: 'PATCH',

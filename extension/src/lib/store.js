@@ -20,6 +20,7 @@ export const KEYS = {
   claudeLoggedOut: 'claudeLoggedOut',
   parserBroken: 'parserBroken',
   bypassUntil: 'bypassUntil', // "Send anyway" override expiry (ms epoch)
+  lastSendAt: 'lastSendAt', // last completion POST observed (diagnostics)
 };
 
 export const DEFAULT_SETTINGS = {

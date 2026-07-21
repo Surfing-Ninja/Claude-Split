@@ -15,7 +15,7 @@
 
 export const USAGE_PATH_RE = /^\/api\/organizations\/([^/]+)\/usage(?:\?|$)/;
 export const COMPLETION_PATH_RE =
-  /^\/api\/organizations\/[^/]+\/chat_conversations\/[^/]+\/completion(?:\?|$)/;
+  /^\/api\/organizations\/[^/]+\/chat_conversations\/[^/]+\/(?:retry_)?completion(?:\?|$)/;
 
 const SESSION_KEY = 'five_hour';
 const WEEKLY_KEY_PREFIX = 'seven_day';

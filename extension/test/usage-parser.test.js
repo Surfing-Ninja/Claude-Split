@@ -25,6 +25,12 @@ describe('url matching', () => {
     assert.equal(isUsageUrl(usage), true);
     assert.equal(isUsageUrl(usage + '?tz=UTC'), true);
     assert.equal(isCompletionUrl(completion), true);
+    assert.equal(
+      isCompletionUrl(
+        'https://claude.ai/api/organizations/abc/chat_conversations/def/retry_completion',
+      ),
+      true,
+    );
     assert.equal(orgIdFromUsageUrl(usage), 'abc-123');
     assert.equal(isUsageUrl('https://claude.ai/api/organizations/abc/chat_conversations'), false);
     assert.equal(isCompletionUrl('https://evil.example/api/organizations/a/usage'), false);
